@@ -2,27 +2,22 @@ class BRDModel
 
   def managedObjectContext
     coordinator = persistentStoreCoordinator
-    puts ' this is coordinator'
     @managedObjectContext ||= begin
 
       managedObjectContext = NSManagedObjectContext.alloc.init
       managedObjectContext.setPersistentStoreCoordinator(coordinator)
+      managedObjectContext
     end if coordinator
     return @managedObjectContext
   end
 
   def managedObjectModel
-    puts "in managedObjectModel"
-    @managedObjectModel||= begin
-     #modelURL = NSBundle.mainBundle.URLForResource("BirthdayReminder", withExtension:'momd')
+     @managedObjectModel||= begin
      @managedObjectModel = NSManagedObjectModel.alloc.init
-     puts" beneath initialization of Model"
-     #@managedObjectModel = NSManagedObjectModel.alloc.initWithContentsOfURL(modelURL)
-    # @managedObjectModel.setEntities([BRDBirthday.entity])
-
-      #puts" beneath set entities"
+    @managedObjectModel.setEntities([BRDBirthday.entity])
+      #@managedObjectModel.entities = [BRDBirthday.entity]
     end
-    puts "this is managedObjectModel #@managedObjectModel"
+    #puts "this is managedObjectModel.entities #{@managedObjectModel.entities}"
     return @managedObjectModel
   end
 
@@ -31,12 +26,12 @@ class BRDModel
     storeURL = self.applicationDocumentsDirectory.URLByAppendingPathComponent("BirthdayReminder.sqlite")
     error = Pointer.new(:object)
     persistentStoreCoordinator = NSPersistentStoreCoordinator.alloc.initWithManagedObjectModel managedObjectModel
-    p "persistentstore coordinator has been initialized"
+
     unless persistentStoreCoordinator.addPersistentStoreWithType(NSSQLiteStoreType, configuration:nil, URL: storeURL, options: nil, error: error)
       raise "Can't add persistent SQLite store: #{error[0].description}"
       abort
     end
-    p "at the end of persistentstorecoordinator"
+
     @persistentStoreCoordinator = persistentStoreCoordinator
     end
      @persistentStoreCoordinator
@@ -49,22 +44,19 @@ class BRDModel
 
   def self.sharedInstance
     @sharedInstance ||= self.alloc.init
-    puts 'in shared instance complete'
+
     return @sharedInstance
   end
 
   def saveChanges
-    puts persistentStoreCoordinator.nil?
-    puts applicationDocumentsDirectory.nil?
-    puts managedObjectModel.nil?
-    puts managedObjectContext.nil?
     error = Pointer.new('@')
     if self.managedObjectContext.hasChanges
-      unless self.managedObjectContext.save(nil)
-        puts "save in BRDMODEL failed"
+      if self.managedObjectContext.save(error)
+
+        puts "save in BRDMODEL succeeded"
 
       else
-        puts "save in BRDMODEL succeeded"
+        raise "it failed #{error[0].description}"
       end
     end
   end

@@ -1,16 +1,14 @@
 class BRHomeViewController < BRCoreViewController
 
  def initWithCoder(aDecoder)
-   puts 'in alloc'
+
    a = super
    if a
      plistPath = NSBundle.mainBundle.pathForResource("birthdays", ofType:"plist")
      nonMutableBirthdays = NSArray.arrayWithContentsOfFile(plistPath)
      #@birthdays = []
     calendar =  NSCalendar.currentCalendar
-     puts calendar
     context = BRDModel.sharedInstance.managedObjectContext
-      puts 'context ran!'
 
      nonMutableBirthdays.each do |dictionary|
      birthday = NSEntityDescription.insertNewObjectForEntityForName('BirthdayReminder', inManagedObjectContext: context)
@@ -46,7 +44,7 @@ class BRHomeViewController < BRCoreViewController
 end
 
  def viewDidLoad
-   puts 'in viewdidload'
+
 
    @table_view = view.viewWithTag 1
 
@@ -71,9 +69,6 @@ end
     cell.textLabel.text = birthday.name
     cell.detailTextLabel.text = birthday.birthdayTextToDisplay
     cell.imageView.image = UIImage.imageWithData(birthday.imageData)
-
-     p birthday.name
-     p fetchedResultsController.fetchedObjects.map{|x| x.name}
 
 
     return cell
@@ -112,7 +107,6 @@ end
       navigation_Controller = segue.destinationViewController
       birthdayEditViewController = navigation_Controller.topViewController
       birthdayEditViewController.birthday = birthday
-      puts birthday
     end
 
   end
@@ -133,8 +127,6 @@ end
           puts "Unresolved Error"
         end
      end
-     puts "this is #{@fetchedResultsController.nil?} "
-     p entity
      @fetchedResultsController
 
    end

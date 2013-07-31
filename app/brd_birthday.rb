@@ -57,7 +57,6 @@ class BRDBirthday < NSManagedObject
   end
 
    def birthdayTextToDisplay
-     puts nextBirthdayAge
      now = NSDate.date
      calendar = NSCalendar.currentCalendar
      componentsToday = NSCalendar.currentCalendar.components(NSYearCalendarUnit|NSMonthCalendarUnit|NSDayCalendarUnit, fromDate:now)
@@ -100,8 +99,8 @@ class BRDBirthday < NSManagedObject
       entity = NSEntityDescription.new
       entity.name = 'BirthdayReminder'
       entity.managedObjectClassName = 'BRDBirthday'
-      puts 'benaeath classname in entity'
-      properties =
+
+      entity.properties =
           ['addressBookID', NSInteger16AttributeType,
            'birthDay', NSInteger16AttributeType,
            'birthMonth', NSInteger16AttributeType,
@@ -118,15 +117,13 @@ class BRDBirthday < NSManagedObject
             property = NSAttributeDescription.alloc.init
             property.name = name
             property.attributeType = type
-            property.optional = false
+            property.optional = true
             property
           end
-      puts"beneath each slice this is entity: #{entity}"
-      entity.properties = properties
-      puts"beneath each slice this is entity_properties: #{entity.properties}"
+
       @entity = entity
     end
-     puts @entity
+
     @entity
   end
 
