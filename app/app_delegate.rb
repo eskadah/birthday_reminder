@@ -10,6 +10,9 @@ class AppDelegate
     @window.rootViewController =root_controller
     #root_controller.view.sizeToFit
     @window.makeKeyAndVisible
+
+    BRStyleSheet.initStyles
+
     true
   end
 end

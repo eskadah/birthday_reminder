@@ -9,6 +9,8 @@ class BRNotificationTimeViewController   < BRCoreViewController
 
     @timePicker.addTarget(self, action:'didChangeTime', forControlEvents:UIControlEventValueChanged)
 
+    BRStyleSheet.styleLabel(@whatTimeLabel,withType: 'BRLabelTypeLarge')
+
 
 
   end

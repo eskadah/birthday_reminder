@@ -1,19 +1,27 @@
 class BRBirthdayEditViewController < BRCoreViewController
 attr_accessor :birthday
 
-
+SIDE = 71.0
 
 
   def viewWillAppear(animated)
     super
 
-    @name_text_field.text = @birthday['name']
-    @date_picker.date = @birthday['birthdate']
-    if (image = @birthday['image'])
-      @photo_view.image = image
+    @name_text_field.text = @birthday.name
+    #@date_picker.date = @birthday.birthdate
+    components = NSCalendar.currentCalendar.components(NSYearCalendarUnit|NSMonthCalendarUnit|NSDayCalendarUnit, fromDate:@date_picker.date)
+    components.day = @birthday.birthDay if @birthday.birthDay > 0
+    components.month = @birthday.birthMonth if @birthday.birthMonth > 0
+    if @birthday.birthYear > 0
+        components.year = @birthday.birthYear
+        @include_year_switch.on = true
     else
-      @photo_view.image = UIImage.imageNamed "icon-birthday-cake.png"
+       @include_year_switch.on = false
     end
+    @birthday.updateNextBirthdayAndAge
+    @date_picker.date = NSCalendar.currentCalendar.dateFromComponents components
+    @photo_view.image = UIImage.imageNamed "icon-birthday-cake.png"
+    @photo_view.image = UIImage.imageWithData(@birthday.imageData) if @birthday.imageData
     updateSaveButton
   end
 
@@ -49,6 +57,9 @@ attr_accessor :birthday
     @date_picker.addTarget(self, action:'didChangeDatePicker', forControlEvents:UIControlEventValueChanged)
     @gesture_recognizer.addTarget(self,action:"didTapPhoto")
 
+    BRStyleSheet.styleLabel(@include_year_label,withType:'BRLabelTypeLarge')
+    BRStyleSheet.styleRoundCorneredView @photo_container_view
+
   end
 
   def textFieldShouldReturn(sender)
@@ -60,29 +71,25 @@ attr_accessor :birthday
 
 
   def didChangeNameText
-     puts @name_text_field.text
-     self.birthday['name']=@name_text_field.text
+     #puts @name_text_field.text
+     #self.birthday['name']=@name_text_field.text
+     @birthday.name =  @name_text_field.text
      updateSaveButton
   end
 
   def updateSaveButton
-     @save_button.enabled = @name_text_field.text.length>0
+     @save_button.enabled = false unless @name_text_field.text
+     @save_button.enabled = @name_text_field.text.length>0  if @name_text_field.text
   end
 
   def didToggleSwitch
-#=begin
-     if @include_year_switch.on?
-       puts "sure I'll share my age with you"
-     else
-       puts "Nope, I will not share my age with you"
-     end
-#=end
-  #puts  @include_year_switch.methods.sort
+   updateBirthdayDetails
   end
 
   def didChangeDatePicker
-    puts @date_picker.date
-    self.birthday["birthdate"]= @date_picker.date
+    #puts @date_picker.date
+    #elf.birthday["birthdate"]= @date_picker.date
+    updateBirthdayDetails
   end
 
   def didTapPhoto
@@ -128,7 +135,72 @@ attr_accessor :birthday
     #picker.dismissModalViewControllerAnimated(true)
     image = info[UIImagePickerControllerOriginalImage]
     @photo_view.image = image
-    birthday["image"]=image
+     side = SIDE
+     side *= UIScreen.mainScreen.scale
+     thumbnail = image.createThumbnailToFillSize((CGSizeMake(side,side)))
+    @photo_view.image = thumbnail
+    @birthday.imageData =UIImageJPEGRepresentation(thumbnail,1.0)
   end
+
+  def updateBirthdayDetails
+      calendar = NSCalendar.currentCalendar
+      components = calendar.components(NSYearCalendarUnit|NSMonthCalendarUnit|NSDayCalendarUnit, fromDate:@date_picker.date)
+      @birthday.birthMonth =  components.month
+      @birthday.birthDay = components.day
+      @birthday.birthYear = 0
+      @birthday.birthYear = components.year if @include_year_switch.on?
+      @birthday.updateNextBirthdayAndAge
+
+  end
+
+  def saveAndDismiss
+   BRDModel.sharedInstance.saveChanges
+   super
+  end
+
+  def cancelAndDismiss
+    BRDModel.sharedInstance.cancelChanges
+    super
+  end
+=begin
+  def self.respondToNotification
+
+    p 'i responded'
+
+  end
+=end
+  #NSNotificationCenter.defaultCenter.addObserver(self, selector: 'respondToNotification', name: UIKeyboardWillShowNotification, object: nil)
+
+end
+
+class UIImage
+
+  def createThumbnailToFillSize(size)
+    mainImageSize = self.size
+    repositionedImageSize = mainImageSize
+    width_scaler = size.width/mainImageSize.width
+    length_scaler = size.height/mainImageSize.height
+
+    if width_scaler > length_scaler
+      scaler = width_scaler; #repositionedImageSize.height = (size.height/scaler)
+    else
+      scaler = length_scaler; #repositionedImageSize.width = (size.width/scaler)
+    end
+
+
+
+    new_x = (( repositionedImageSize.width - mainImageSize.width)/2.0) * scaler
+    new_y = (( repositionedImageSize.height - mainImageSize.height)/2.0) * scaler
+    UIGraphicsBeginImageContext(size)
+    self.drawInRect(CGRectMake(new_x,new_y,mainImageSize.width*scaler,mainImageSize.height*scaler))
+
+    thumb = UIGraphicsGetImageFromCurrentImageContext()
+
+    UIGraphicsEndImageContext()
+
+    return thumb
+
+  end
+
 
 end

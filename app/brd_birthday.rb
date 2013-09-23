@@ -34,8 +34,9 @@ class BRDBirthday < NSManagedObject
   end
 
   def updateWithDefaults
+    now = NSDate.date
     dateComponents = NSCalendar.currentCalendar.components(NSYearCalendarUnit|NSMonthCalendarUnit|NSDayCalendarUnit, fromDate:now)
-    self.birthday = dateComponents.day
+    self.birthDay = dateComponents.day
     self.birthMonth = dateComponents.month
     self.birthYear = 0
 
@@ -47,7 +48,7 @@ class BRDBirthday < NSManagedObject
     calendar = NSCalendar.currentCalendar
     componentsToday = NSCalendar.currentCalendar.components(NSYearCalendarUnit|NSMonthCalendarUnit|NSDayCalendarUnit, fromDate:now)
     today = calendar.dateFromComponents componentsToday
-    timeDiffSecs = self.nextBirthday.timeIntervalSinceDate
+    timeDiffSecs = self.nextBirthday.timeIntervalSinceDate now
     days = (timeDiffSecs/(60.0*60.0*24.0)).floor
 
   end

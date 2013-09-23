@@ -3,6 +3,8 @@ class BRCoreViewController  < UIViewController
 def viewDidLoad
   super
   view.backgroundColor = UIColor.grayColor
+  backgroundView = UIImageView.alloc.initWithImage(UIImage.imageNamed 'app-background.png')
+  view.insertSubview(backgroundView, atIndex:0)
 end
 
 def cancelAndDismiss
@@ -12,7 +14,8 @@ end
 
 def saveAndDismiss
   puts 'saved'
-  self.dismissModalViewControllerAnimated(true,completion:lambda {puts 'dismissed'}[])
+
+  self.dismissViewControllerAnimated(true,completion:lambda {puts 'dismissed'}[])
 end
 
 

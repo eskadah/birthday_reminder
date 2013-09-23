@@ -6,25 +6,45 @@ class BRHomeViewController < BRCoreViewController
    if a
      plistPath = NSBundle.mainBundle.pathForResource("birthdays", ofType:"plist")
      nonMutableBirthdays = NSArray.arrayWithContentsOfFile(plistPath)
-     #@birthdays = []
+
     calendar =  NSCalendar.currentCalendar
     context = BRDModel.sharedInstance.managedObjectContext
+     uids = [] ; i = 0
+     while i < nonMutableBirthdays.length
 
-     nonMutableBirthdays.each do |dictionary|
-     birthday = NSEntityDescription.insertNewObjectForEntityForName('BirthdayReminder', inManagedObjectContext: context)
-     name = dictionary['name']
-     pic = dictionary['pic']
-     birthdate = dictionary['birthdate']
+       dictionary = nonMutableBirthdays[i]
+       uid = dictionary['name']
+       uids << uid
+       i+=1
+     end
+     existingEntities = BRDModel.sharedInstance.getExistingBirthdaysWithUIDs(uids)
+      index = 0
+     while  index < nonMutableBirthdays.length
+       dictionary = nonMutableBirthdays[index]
+       uid = dictionary['name']
+       birthday = existingEntities[uid]
+       unless birthday
+         birthday = NSEntityDescription.insertNewObjectForEntityForName("BirthdayReminder", inManagedObjectContext: context)
+         existingEntities[uid] = birthday
+         birthday.uid = uid
+       end
+
+     #nonMutableBirthdays.each do |dictionary|
+     #birthday = NSEntityDescription.insertNewObjectForEntityForName('BirthdayReminder', inManagedObjectContext: context)
+       name = dictionary['name']
+       pic = dictionary['pic']
+       birthdate = dictionary['birthdate']
      pathForPic = NSBundle.mainBundle.pathForResource(pic, ofType:nil)
      imageData = NSData.dataWithContentsOfFile(pathForPic)
      birthday.name = name
      birthday.imageData = imageData
-     components = NSCalendar.currentCalendar.components(NSYearCalendarUnit|NSMonthCalendarUnit|NSDayCalendarUnit, fromDate:birthdate)
+     components = calendar.components(NSYearCalendarUnit|NSMonthCalendarUnit|NSDayCalendarUnit, fromDate:birthdate)
      birthday.birthDay = components.day
      birthday.birthMonth = components.month
      birthday.birthYear = components.year
      birthday.updateNextBirthdayAndAge
-
+     index += 1
+     end
 
 =begin
    name = dictionary['name']
@@ -37,7 +57,7 @@ class BRHomeViewController < BRCoreViewController
        birthday['birthdate']= birthdate
        @birthdays << birthday
 =end
-     end
+     #end
      BRDModel.sharedInstance.saveChanges
    end
    return a
@@ -47,6 +67,8 @@ end
 
 
    @table_view = view.viewWithTag 1
+   puts @table_view.dataSource
+   puts @table_view.delegate
 
 
  end
@@ -60,16 +82,15 @@ end
      cell = @table_view.dequeueReusableCellWithIdentifier('Cell')
 
     birthday =  fetchedResultsController.objectAtIndexPath(indexPath) #@birthdays[indexPath.row]
-
-
-    #name = birthday['name']
-    #birthdate = birthday['birthdate']
-    #image = birthday['image']
-
-    cell.textLabel.text = birthday.name
-    cell.detailTextLabel.text = birthday.birthdayTextToDisplay
-    cell.imageView.image = UIImage.imageWithData(birthday.imageData)
-
+    brTableCell = cell
+    brTableCell.birthday = birthday
+    if birthday.imageData
+      brTableCell.iconView.image = UIImage.imageWithData birthday.imageData
+    else
+       brTableCell.iconView.image = UIImage.imageNamed('icon-birthday-cake.png')
+    end
+     backgroundImage = indexPath.row == 0 ? UIImage.imageNamed('table-row-background.png') : UIImage.imageNamed('table-row-icing-background.png')
+     brTableCell.backgroundView = UIImageView.alloc.initWithImage backgroundImage
 
     return cell
   end
@@ -92,7 +113,7 @@ end
     identifier = segue.identifier
     begin
        selectedIndexPath = @table_view.indexPathForSelectedRow
-       birthday = @birthdays[selectedIndexPath.row]
+       birthday = fetchedResultsController.objectAtIndexPath(selectedIndexPath)
        birthdayDetailViewController = segue.destinationViewController
        birthdayDetailViewController.birthday = birthday
 
@@ -100,13 +121,13 @@ end
 
 
     if identifier == "AddBirthday"
-      birthday = {}
-      birthday['name'] = 'My Friend'
-      birthday['birthdate'] = NSDate.date
-      @birthdays << birthday
-      navigation_Controller = segue.destinationViewController
-      birthdayEditViewController = navigation_Controller.topViewController
-      birthdayEditViewController.birthday = birthday
+
+    context = BRDModel.sharedInstance.managedObjectContext
+    birthday = NSEntityDescription.insertNewObjectForEntityForName('BirthdayReminder', inManagedObjectContext: context)
+    birthday.updateWithDefaults
+    navigationController = segue.destinationViewController
+    birthdayEditViewController = navigationController.topViewController
+    birthdayEditViewController.birthday = birthday
     end
 
   end
