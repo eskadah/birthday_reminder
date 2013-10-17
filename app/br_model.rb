@@ -95,5 +95,63 @@ class BRDModel
      managedObjectContext.rollback
    end
 
+   # addressBook code starts
 
+  def fetchAddressBookBirthdays
+    addressbook = ABAddressBookCreateWithOptions(nil,nil)
+    case ABAddressBookGetAuthorizationStatus()
+      when KABAuthorizationStatusNotDetermined
+        ABAddressBookRequestAccessWithCompletion(addressbook,lambda do |granted,error|
+
+           if granted
+             puts 'Access to the Address Book has been granted'
+             gcdq_main = Dispatch::Queue.main
+             gcdq_main.async do
+
+               self.extractBirthdaysFromAddressBook(ABAddressBookCreateWithOptions(nil,nil))
+             end
+           else
+             puts 'Access to the Address Book has been denied'
+           end
+
+
+        end
+        )
+
+      when KABAuthorizationStatusAuthorized
+        puts 'User has already authorized access'
+        extractBirthdaysFromAddressBook(ABAddressBookCreateWithOptions(nil,nil))
+      when  KABAuthorizationStatusRestricted
+        puts 'User cannot access due to parental controls'
+      when  KABAuthorizationStatusDenied
+         puts ' User has denied access'
+
+    end
+  end
+
+  def extractBirthdaysFromAddressBook(addressbook)
+    
+    puts 'extractBirthdayFromAddressBook'
+    
+    people = ABAddressBookCopyArrayOfAllPeople(addressbook)
+    peopleCount = ABAddressBookGetPersonCount(addressbook)
+    birthdays = []
+    (0...peopleCount).each do |i|
+      addressbookRecord = CFArrayGetValueAtIndex(people, i)
+      addressbookRecordObject = addressbookRecord.to_object
+      birthdate = ABRecordCopyValue(addressbookRecordObject,KABPersonBirthdayProperty)
+      next unless birthdate
+      birthday = BRDBirthdayImport.alloc.initWithAddressBookRecord(addressbookRecord.to_object)
+      birthdays << birthday
+    end
+    birthdays.sort_by!{|birthday| birthday.name}
+    userInfo = {'birthdays' => birthdays}
+    performSelectorOnMainThread('postNotification:', withObject:userInfo, waitUntilDone:nil)
+
+
+  end
+
+   def postNotification(userInfo)
+     NSNotificationCenter.defaultCenter.postNotificationName('BRNotificationAddressBookBirthdaysDidUpdate', object: self, userInfo: userInfo)
+   end
 end

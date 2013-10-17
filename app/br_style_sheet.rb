@@ -101,7 +101,7 @@ end
 
     #Table View
 
-    UITableView.appearance.setBackgroundColor(UIColor.clearColor)
+    UITableView.appearance.backgroundColor =  UIColor.clearColor
     UITableViewCell.appearance.selectionStyle = UITableViewCellSelectionStyleNone
     UITableView.appearance.separatorStyle = UITableViewCellSeparatorStyleNone
 

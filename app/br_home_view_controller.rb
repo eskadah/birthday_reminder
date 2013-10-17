@@ -1,81 +1,43 @@
 class BRHomeViewController < BRCoreViewController
+attr_accessor :has_friends
 
- def initWithCoder(aDecoder)
 
-   a = super
-   if a
-     plistPath = NSBundle.mainBundle.pathForResource("birthdays", ofType:"plist")
-     nonMutableBirthdays = NSArray.arrayWithContentsOfFile(plistPath)
-
-    calendar =  NSCalendar.currentCalendar
-    context = BRDModel.sharedInstance.managedObjectContext
-     uids = [] ; i = 0
-     while i < nonMutableBirthdays.length
-
-       dictionary = nonMutableBirthdays[i]
-       uid = dictionary['name']
-       uids << uid
-       i+=1
-     end
-     existingEntities = BRDModel.sharedInstance.getExistingBirthdaysWithUIDs(uids)
-      index = 0
-     while  index < nonMutableBirthdays.length
-       dictionary = nonMutableBirthdays[index]
-       uid = dictionary['name']
-       birthday = existingEntities[uid]
-       unless birthday
-         birthday = NSEntityDescription.insertNewObjectForEntityForName("BirthdayReminder", inManagedObjectContext: context)
-         existingEntities[uid] = birthday
-         birthday.uid = uid
-       end
-
-     #nonMutableBirthdays.each do |dictionary|
-     #birthday = NSEntityDescription.insertNewObjectForEntityForName('BirthdayReminder', inManagedObjectContext: context)
-       name = dictionary['name']
-       pic = dictionary['pic']
-       birthdate = dictionary['birthdate']
-     pathForPic = NSBundle.mainBundle.pathForResource(pic, ofType:nil)
-     imageData = NSData.dataWithContentsOfFile(pathForPic)
-     birthday.name = name
-     birthday.imageData = imageData
-     components = calendar.components(NSYearCalendarUnit|NSMonthCalendarUnit|NSDayCalendarUnit, fromDate:birthdate)
-     birthday.birthDay = components.day
-     birthday.birthMonth = components.month
-     birthday.birthYear = components.year
-     birthday.updateNextBirthdayAndAge
-     index += 1
-     end
-
-=begin
-   name = dictionary['name']
-       pic = dictionary['pic']
-       image = UIImage.imageNamed(pic)
-       birthdate = dictionary['birthdate']
-       birthday =  {}
-       birthday['name'] = name
-       birthday['image'] = image
-       birthday['birthdate']= birthdate
-       @birthdays << birthday
-=end
-     #end
-     BRDModel.sharedInstance.saveChanges
-   end
-   return a
-end
 
  def viewDidLoad
 
-
+    super
    @table_view = view.viewWithTag 1
    puts @table_view.dataSource
    puts @table_view.delegate
+   @importView = view.viewWithTag 20
+   @addressBookButton = view.viewWithTag 21
+   @facebookButton = view.viewWithTag 22
+   @importLabel = view.viewWithTag 23
+   @addressBook = toolbarItems[1]
+   @addressBook.target = self
+   @addressBook.action ='importFromAddressBookTapped:'
+   @facebook = toolbarItems[3]
+   @facebook.target = self
+   @facebook.action ='importFromFacebookTapped:'
 
+   BRStyleSheet.styleLabel(@importLabel,withType:'BRLabelTypeLarge')
+
+ end
+
+ def has_friends=(flag)
+    @has_friends = flag
+    @importView.hidden = @has_friends
+    @table_view.hidden = !@has_friends
+    if navigationController.topViewController == self
+        navigationController.setToolbarHidden(!@has_friends,animated:false)
+    end
 
  end
 
  def viewWillAppear(animated)
    super
    @table_view.reloadData
+   self.has_friends = fetchedResultsController.fetchedObjects.count > 0
  end
 
   def tableView(tableView, cellForRowAtIndexPath:indexPath)
@@ -151,6 +113,15 @@ end
      @fetchedResultsController
 
    end
+
+  def importFromAddressBookTapped(sender)
+    nav = self.storyboard.instantiateViewControllerWithIdentifier 'ImportAddressBook'
+    navigationController.presentViewController(nav,animated: true,completion:nil)
+  end
+
+  def importFromFacebookTapped(sender)
+
+  end
 
   def controllerDidChangeContent(controller)
 
