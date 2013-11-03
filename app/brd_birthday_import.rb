@@ -42,6 +42,26 @@ class BRDBirthdayImport
     a
   end
 
+  def initWithFacebookDictionary(dict)
+    a = init
+    if a
+      a.name = dict['name']
+      a.uid = "fb-#{dict['id']}"
+      a.facebookID ="#{dict['id']}"
+      a.picURL ="http://graph.facebook.com/#{facebookID}/picture?type=large"
+      birthDateString = dict['birthday']
+      birthdaySegments = birthDateString.split('/')
+      a.birthDay = birthdaySegments[1].to_i
+      a.birthMonth = birthdaySegments[0].to_i
+      if birthdaySegments.size > 2
+        a.birthYear = birthdaySegments[2].to_i
+      end
+      a.updateNextBirthdayAndAge
+
+    end
+    a
+  end
+
   def updateNextBirthdayAndAge
     now = NSDate.date
     calendar = NSCalendar.currentCalendar

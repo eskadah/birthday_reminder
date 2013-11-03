@@ -1,6 +1,7 @@
 class BRDModel
+    attr_accessor :facebookAccount,:currentFacebookAction,:postToFacebookMessage,:postToFacebookID
 
-  def managedObjectContext
+   def managedObjectContext
     coordinator = persistentStoreCoordinator
     @managedObjectContext ||= begin
 
@@ -146,12 +147,162 @@ class BRDModel
     end
     birthdays.sort_by!{|birthday| birthday.name}
     userInfo = {'birthdays' => birthdays}
-    performSelectorOnMainThread('postNotification:', withObject:userInfo, waitUntilDone:nil)
+    performSelectorOnMainThread('postAddressNotification:', withObject:userInfo, waitUntilDone:nil)
 
 
   end
 
-   def postNotification(userInfo)
+   def postAddressNotification(userInfo)
      NSNotificationCenter.defaultCenter.postNotificationName('BRNotificationAddressBookBirthdaysDidUpdate', object: self, userInfo: userInfo)
    end
+
+
+  def importBirthdays(birthdaysToImport)
+    newUIDs = []
+    birthdaysToImport.each_with_index do |importBirthday,_|
+      uid = importBirthday.uid
+      newUIDs << uid
+    end
+    existingBirthdays = getExistingBirthdaysWithUIDs(newUIDs)
+    context = BRDModel.sharedInstance.managedObjectContext
+    birthdaysToImport.each do |importBirthday|
+      uid = importBirthday.uid
+      birthday = existingBirthdays[uid]
+      if birthday
+
+      else
+        birthday = NSEntityDescription.insertNewObjectForEntityForName('BirthdayReminder', inManagedObjectContext:context)
+        birthday.uid = uid
+        existingBirthdays[uid] = birthday
+        birthday.name = importBirthday.name
+        birthday.uid = importBirthday.uid
+        birthday.picURL = importBirthday.picURL
+        birthday.imageData = importBirthday.imageData
+        birthday.addressBookID = importBirthday.addressBookID
+        birthday.facebookID = importBirthday.facebookID
+        birthday.birthDay = importBirthday.birthDay
+        birthday.birthMonth = importBirthday.birthMonth
+        birthday.birthYear = importBirthday.birthYear
+        birthday.updateNextBirthdayAndAge
+
+      end
+    end
+     saveChanges
+  end
+
+  def fetchFacebookBirthdays
+    puts 'fetchFacebookBirthdays'
+    unless facebookAccount
+      self.currentFacebookAction = 'FacebookActionGetFriendsBirthdays'
+      authenticateWithFacebook
+      return
+    end
+    requestURL = NSURL.URLWithString('https://graph.facebook.com/me/friends')
+    params = {'fields'=>'name,id,birthday'}
+    request = SLRequest.requestForServiceType(SLServiceTypeFacebook, requestMethod: SLRequestMethodGET, URL: requestURL, parameters: params)
+    request.account = facebookAccount
+    handler = lambda do |responseData,urlResponse,error|
+      if error
+        NSLog('error with getting my friends birthdays: %@',error)
+      else
+        resultD = NSJSONSerialization.JSONObjectWithData(responseData, options: 0, error: nil)
+        NSLog('facebook returned friends: %@', resultD)
+        birthdayDictionaries = resultD['data']
+        #birthdayCount =  birthdayDictionaries.count
+        birthdays = []
+        birthdayDictionaries.each do |facebookDictionary|
+          birthDateS = facebookDictionary['birthday']
+          next unless birthDateS
+          NSLog('Found a Birthday from Facebook: %@',facebookDictionary)
+          birthday = BRDBirthdayImport.alloc.initWithFacebookDictionary(facebookDictionary)
+          birthdays << birthday
+        end
+        birthdays.sort_by!{|birthday| birthday.name}
+        userInfo = {'birthdays'=> birthdays}
+        performSelectorOnMainThread('postFacebookNotification:', withObject:userInfo, waitUntilDone:nil)
+      end
+    end
+    request.performRequestWithHandler(handler)
+  end
+
+  def postFacebookNotification(userInfo)
+    NSNotificationCenter.defaultCenter.postNotificationName('BRNotificationFaceBookBirthdaysDidUpdate', object: self, userInfo: userInfo)
+  end
+
+  def authenticateWithFacebook
+    accountStore = ACAccountStore.alloc.init
+    accountTypeFacebook = accountStore.accountTypeWithAccountTypeIdentifier(ACAccountTypeIdentifierFacebook)
+    options = {ACFacebookAppIdKey => '316689658473081', ACFacebookPermissionsKey => ['publish_actions','friends_birthday','email'], ACFacebookAudienceKey => ACFacebookAudienceFriends }
+    completion = lambda do |granted, error|
+      if granted
+        puts 'Facebook Authorized!'
+        accounts = accountStore.accountsWithAccountType accountTypeFacebook
+        self.facebookAccount = accounts.last
+        case currentFacebookAction
+          when 'FacebookActionGetFriendsBirthdays' then fetchFacebookBirthdays
+          when 'FacebookActionPostToWall'
+            #self.postToFacebookWall(self.postToFacebookMessage,withFacebookID:self.postToFacebookID)
+            array = [postToFacebookMessage,self.postToFacebookID]
+            dict = {'message'=>postToFacebookMessage,'id'=>postToFacebookID}
+          #performSelectorOnMainThread('postToFacebookWall:withFacebookID:', withObject:dict, waitUntilDone:true)
+
+            gcdq_main = Dispatch::Queue.main
+            gcdq_main.async do
+
+              postToFacebookWall(postToFacebookMessage,withFacebookID:postToFacebookID)
+            end
+        end
+      else
+        if error.code == ACErrorAccountNotFound
+          puts'No Facebook Account Found'
+        else
+          puts "authentication failed:#{error.localizedDescription}"
+        end
+      end
+    end
+    accountStore.requestAccessToAccountsWithType(accountTypeFacebook, options: options, completion: completion)
+
+  end
+
+  def postToFacebookWall(message,withFacebookID:id)
+    puts 'postToFacebookWall Method Called from BRDMODEL'
+    if self.facebookAccount.nil?
+      puts 'not authorized to post to FB'
+      self.postToFacebookID = id
+      puts self.postToFacebookID
+      self.postToFacebookMessage = message
+      self.currentFacebookAction = 'FacebookActionPostToWall'
+
+      authenticateWithFacebook
+      return
+    end
+
+    puts 'we are authorized to post to FB!'
+    fbcredential = facebookAccount.credential
+    accessToken = fbcredential.oauthToken
+
+    handler = lambda do |result,url,error|
+      if error
+        puts "there is an error:#{error.localizedDescription}"
+      else
+        puts "there was no error;#{url.absoluteString}" if url
+      end
+
+    end
+    #params = {'app_id' => '316689658473081','name'=> 'Happy Birthday!','to'=>"#{self.postToFacebookID}"}
+    params = {'app_id' => '316689658473081','name'=> 'Happy Birthday!','to'=>"#{id}"} #if id
+    puts id
+    puts params
+
+      #session = FBSession.alloc.initWithAppID('316689658473081',permissions:nil,urlSchemeSuffix:nil,tokenCacheStrategy:nil)
+      #FBSession.renewSystemCredentials(nil)
+      #FBAccessTokenData.createTokenFromString(accessToken.to_s,permissions:nil,expirationDate:nil,)
+    # make sure you add the FacebookAppID entry to info.plist before continuing with below
+      session = FBSession.alloc.init
+      session.openWithBehavior(FBSessionLoginBehaviorUseSystemAccountIfPresent,completionHandler:nil)
+      FBWebDialogs.presentFeedDialogModallyWithSession(session,parameters:params,handler:handler)
+
+
+  end
+
 end

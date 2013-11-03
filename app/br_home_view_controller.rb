@@ -7,18 +7,25 @@ attr_accessor :has_friends
 
     super
    @table_view = view.viewWithTag 1
+
    puts @table_view.dataSource
    puts @table_view.delegate
    @importView = view.viewWithTag 20
    @addressBookButton = view.viewWithTag 21
    @facebookButton = view.viewWithTag 22
+   @addressBookButton.addTarget(self, action:'importFromAddressBookTapped:',forControlEvents:UIControlEventTouchUpInside)
+   @facebookButton.addTarget(self, action:'importFromFacebookTapped:',forControlEvents:UIControlEventTouchUpInside)
    @importLabel = view.viewWithTag 23
+  #p @addressBookButton.titleLabel.text
+  #p @addressBookButton.actionsForTarget(self,forControlEvent:UIControlEventTouchUpInside)
+  #p @addressBookButton.enabled?
    @addressBook = toolbarItems[1]
    @addressBook.target = self
    @addressBook.action ='importFromAddressBookTapped:'
    @facebook = toolbarItems[3]
    @facebook.target = self
    @facebook.action ='importFromFacebookTapped:'
+   puts view.subviews
 
    BRStyleSheet.styleLabel(@importLabel,withType:'BRLabelTypeLarge')
 
@@ -46,11 +53,11 @@ attr_accessor :has_friends
     birthday =  fetchedResultsController.objectAtIndexPath(indexPath) #@birthdays[indexPath.row]
     brTableCell = cell
     brTableCell.birthday = birthday
-    if birthday.imageData
-      brTableCell.iconView.image = UIImage.imageWithData birthday.imageData
-    else
-       brTableCell.iconView.image = UIImage.imageNamed('icon-birthday-cake.png')
-    end
+    #if birthday.imageData
+    #  brTableCell.iconView.image = UIImage.imageWithData birthday.imageData
+    #else
+    #   brTableCell.iconView.image = UIImage.imageNamed('icon-birthday-cake.png')
+    #end
      backgroundImage = indexPath.row == 0 ? UIImage.imageNamed('table-row-background.png') : UIImage.imageNamed('table-row-icing-background.png')
      brTableCell.backgroundView = UIImageView.alloc.initWithImage backgroundImage
 
@@ -120,7 +127,9 @@ attr_accessor :has_friends
   end
 
   def importFromFacebookTapped(sender)
-
+    puts 'import from facebook'
+    nav = self.storyboard.instantiateViewControllerWithIdentifier 'ImportFacebook'
+    navigationController.presentViewController(nav,animated: true,completion:nil)
   end
 
   def controllerDidChangeContent(controller)

@@ -24,19 +24,19 @@ class BRBirthdayDetailViewController  < BRCoreViewController
     @scroll_view = view.viewWithTag 13
 
     @facebook_button = view.viewWithTag 8
-    #@facebook_button.addTarget(self,action:'facebookButtonTapped:',forControlEvents:UIControlEventTouchUpInside)
+    @facebook_button.addTarget(self,action:'facebookButtonTapped:',forControlEvents:UIControlEventTouchUpInside)
 
     @call_button = view.viewWithTag 9
-    #@call_button.addTarget(self,action:'callButtonTapped:',forControlEvents:UIControlEventTouchUpInside)
+    @call_button.addTarget(self,action:'callButtonTapped:',forControlEvents:UIControlEventTouchUpInside)
 
     @sms_button = view.viewWithTag 10
-    #@sms_button.addTarget(self,action:'smsButtonTapped:',forControlEvents:UIControlEventTouchUpInside)
+    @sms_button.addTarget(self,action:'smsButtonTapped:',forControlEvents:UIControlEventTouchUpInside)
 
     @email_button = view.viewWithTag 11
-    #@email_button.addTarget(self,action:'emailButtonTapped:',forControlEvents:UIControlEventTouchUpInside)
+    @email_button.addTarget(self,action:'emailButtonTapped:',forControlEvents:UIControlEventTouchUpInside)
 
     @delete_button = view.viewWithTag 12
-    #@delete_button.addTarget(self,action:'deleteButtonTapped:',forControlEvents:UIControlEventTouchUpInside)
+    @delete_button.addTarget(self,action:'deleteButtonTapped:',forControlEvents:UIControlEventTouchUpInside)
 
 
     BRStyleSheet.styleRoundCorneredView(@photo_view)
@@ -88,8 +88,30 @@ class BRBirthdayDetailViewController  < BRCoreViewController
     cY += buttonGap * 2
     buttonsToShow = [@facebook_button,@sms_button,@call_button,@email_button,@delete_button]
 
-    for button in buttonsToShow do
+    buttonsToHide = []
+    if birthday.facebookID == nil
+      buttonsToShow.delete(@facebook_button)
+      buttonsToHide.push(@facebook_button)
+    end
+    if callLink == nil
+      buttonsToShow.delete(@call_button)
+      buttonsToHide.push(@call_button)
+    end
+    if smsLink == nil
+      buttonsToShow.delete(@sms_button)
+      buttonsToHide.push(@sms_button)
+    end
+    if emailLink == nil
+      buttonsToShow.delete(@email_button)
+      buttonsToHide.push(@email_button)
+    end
 
+    for button in buttonsToHide do
+      button.hidden = true
+    end
+
+    for button in buttonsToShow do
+      button.hidden = false
       frame = button.frame
       frame.origin.y = cY
       button.frame = frame
@@ -99,7 +121,43 @@ class BRBirthdayDetailViewController  < BRCoreViewController
 
      @scroll_view.contentSize = [320,cY]
 
+
+
   end
+
+   def callButtonTapped
+     link = callLink
+     UIApplication.sharedApplication.openURL(NSURL.URLWithString(link))
+   end
+
+   def smsButtonTapped
+     link = smsLink
+     UIApplication.sharedApplication.openURL(NSURL.URLWithString(link))
+   end
+
+   def emailButtonTapped
+     link = emailLink
+     UIApplication.sharedApplication.openURL(NSURL.URLWithString(link))
+   end
+
+   def deleteButtonTapped(sender)
+     actionSheet = UIActionSheet.alloc.initWithTitle(nil, delegate: self, cancelButtonTitle: 'Cancel', destructiveButtonTitle: "Delete #{birthday.name}", otherButtonTitles: nil)
+     actionSheet.showInView view
+   end
+
+   def facebookButtonTapped(sender)
+     #BRDModel.sharedInstance.authenticateWithFacebook
+     BRDModel.sharedInstance.postToFacebookWall('nil',withFacebookID:self.birthday.facebookID)
+   end
+
+   def actionSheet(actionSheet,willDismissWithButtonIndex:buttonIndex)
+     return if buttonIndex == actionSheet.cancelButtonIndex
+     context = BRDModel.sharedInstance.managedObjectContext
+     context.deleteObject(self.birthday)
+     BRDModel.sharedInstance.saveChanges
+     navigationController.popViewControllerAnimated(true)
+   end
+
 
   def prepareForSegue(segue,sender:sender)
 
@@ -120,6 +178,69 @@ class BRBirthdayDetailViewController  < BRCoreViewController
 
   end
 
+  def telephoneNumber
+    addressBook = ABAddressBookCreateWithOptions(nil,nil)
+    record = ABAddressBookGetPersonWithRecordID(addressBook,birthday.addressBookID)
+    multi = ABRecordCopyValue(record,KABPersonPhoneProperty)
 
+    if ABMultiValueGetCount(multi) > 0
+      telephone = ABMultiValueCopyValueAtIndex(multi,0)
+      tel = telephone.gsub(' ','')
+      puts telephone
+
+    end
+    tel
+  end
+
+  def callLink
+    if !birthday.addressBookID || birthday.addressBookID == 0
+      return nil
+    end
+    telnumber = telephoneNumber
+    return nil unless telnumber
+    callLink = "tel:#{telnumber}"
+    if UIApplication.sharedApplication.canOpenURL(NSURL.URLWithString callLink)
+      return callLink
+    else
+      return nil
+    end
+  end
+
+   def smsLink
+     if !birthday.addressBookID || birthday.addressBookID == 0
+       return nil
+     end
+     telnumber = telephoneNumber
+     return nil unless telnumber
+     smsLink = "sms:#{telnumber}"
+     if UIApplication.sharedApplication.canOpenURL(NSURL.URLWithString smsLink)
+       return callLink
+     else
+       return nil
+     end
+   end
+
+   def emailLink
+     addressBook = ABAddressBookCreateWithOptions(nil,nil)
+     record = ABAddressBookGetPersonWithRecordID(addressBook,(birthday.addressBookID || 0))
+     multi = ABRecordCopyValue(record,KABPersonEmailProperty)
+
+     if ABMultiValueGetCount(multi) > 0
+       email = ABMultiValueCopyValueAtIndex(multi,0)
+       em = email.gsub(' ','')
+       puts em
+     end
+     if em
+       emailLink = "mailto:#{em}"
+       emailLink += '?subject=Happy%20Birthday'
+       puts" this is emailLink :#{emailLink}"
+       puts  UIApplication.sharedApplication.canOpenURL(NSURL.URLWithString 'mailto:eskadah@yahoo.com')
+       if UIApplication.sharedApplication.canOpenURL(NSURL.URLWithString(emailLink))
+         return emailLink
+       end
+
+     end
+     return nil
+   end
 
 end

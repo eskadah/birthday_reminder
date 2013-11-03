@@ -1,5 +1,6 @@
 class BirthdayTableViewCell   < UITableViewCell
   attr_reader :birthday
+  attr_accessor :birthdayImport
 
   def iconView
     @icon_view = contentView.viewWithTag 1
@@ -75,6 +76,46 @@ class BirthdayTableViewCell   < UITableViewCell
     end
 
     birthdayLabel.text = @birthday.birthdayTextToDisplay
+
+    if @birthday.imageData == nil
+      if @birthday.picURL && @birthday.picURL.length > 0
+        self.iconView.setImageWithRemoteFileURL(@birthday.picURL,placeHolderImage:(UIImage.imageNamed('icon-birthday-cake.png')))
+      else
+        self.iconView.image = UIImage.imageNamed('icon-birthday-cake.png')
+      end
+    else
+      self.iconView.image = UIImage.imageWithData(@birthday.imageData)
+    end
+  end
+
+  def birthdayImport=(birthdayImport)
+    @birthdayImport = birthdayImport
+    nameLabel.text = @birthdayImport.name
+    days = @birthdayImport.remainingDaysUntilNextBirthday
+
+    if days == 0
+      remainingDaysLabel.text = remainingDaysSubTextLabel.text = ''
+      remainingDaysImageView.image = UIImage.imageNamed 'icon-birthday-cake.png'
+    else
+      remainingDaysLabel.text = "#{days}"
+      remainingDaysSubTextLabel.text = days == 1 ? 'more day' : 'more days'
+      remainingDaysImageView.image = UIImage.imageNamed 'icon-days-remaining.png'
+    end
+
+    birthdayLabel.text = @birthdayImport.birthdayTextToDisplay
+    if @birthdayImport.imageData == nil
+      if @birthdayImport.picURL && @birthdayImport.picURL.length > 0
+        puts ' birthda import picurl has length'
+        puts  @birthdayImport.picURL
+        puts  birthdayImport.picURL
+        iconView.setImageWithRemoteFileURL(@birthdayImport.picURL,placeHolderImage:UIImage.imageNamed('icon-birthday-cake.png'))
+      else
+        puts ' birthda import picurl has no length'
+        self.iconView.image = UIImage.imageNamed('icon-birthday-cake.png')
+      end
+    else
+      self.iconView.image = UIImage.imageWithData(@birthdayImport.imageData)
+    end
   end
 
 

@@ -15,10 +15,25 @@ class BRNotificationTimeViewController   < BRCoreViewController
 
   end
 
+  def viewWillAppear(animated)
+    super
+    hour = BRDSettings.sharedInstance.notificationHour
+    minute = BRDSettings.sharedInstance.notificationMinute
+
+    components = NSCalendar.currentCalendar.components(NSHourCalendarUnit|NSMinuteCalendarUnit, fromDate: NSDate.date)
+    components.hour = hour
+    components.minute = minute
+    @timePicker.date = NSCalendar.currentCalendar.dateFromComponents(components)
+
+  end
+
+
+
 
   def didChangeTime
     components = NSCalendar.currentCalendar.components(NSHourCalendarUnit|NSMinuteCalendarUnit,fromDate:@timePicker.date)
-    puts "#{components.hour}:#{components.minute}"
+    BRDSettings.sharedInstance.notificationHour = components.hour
+    BRDSettings.sharedInstance.notificationMinute = components.minute
 
   end
 
