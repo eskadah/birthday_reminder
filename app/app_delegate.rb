@@ -1,7 +1,7 @@
 class AppDelegate
   def application(application, didFinishLaunchingWithOptions:launchOptions)
 
-    story_board = UIStoryboard.storyboardWithName('MainStoryBoard', bundle: NSBundle.mainBundle)
+    story_board = UIStoryboard.storyboardWithName('MainStoryBoard1', bundle: NSBundle.mainBundle)
 
     root_controller = story_board.instantiateInitialViewController
 
@@ -13,6 +13,20 @@ class AppDelegate
 
     BRStyleSheet.initStyles
 
+
+
     true
   end
+
+ def applicationDidBecomeActive(application)
+   UIApplication.sharedApplication.applicationIconBadgeNumber = 0
+ end
+
+
+
+
+
+
 end
+
+

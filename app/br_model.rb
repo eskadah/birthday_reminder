@@ -48,6 +48,7 @@ class BRDModel
   end
 
   def self.sharedInstance
+
     @sharedInstance ||= self.alloc.init
 
     return @sharedInstance
@@ -188,6 +189,7 @@ class BRDModel
       end
     end
      saveChanges
+    updateCachedBirthdays
   end
 
   def fetchFacebookBirthdays
@@ -303,6 +305,66 @@ class BRDModel
       FBWebDialogs.presentFeedDialogModallyWithSession(session,parameters:params,handler:handler)
 
 
+  end
+
+
+
+  def updateCachedBirthdays
+    puts 'update cached bdays called'
+    UIApplication.sharedApplication.cancelAllLocalNotifications
+     fetchRequest = NSFetchRequest.alloc.init
+    context = managedObjectContext
+    entity = NSEntityDescription.entityForName('BirthdayReminder', inManagedObjectContext: context)
+    sortDescriptor = NSSortDescriptor.alloc.initWithKey('nextBirthday', ascending: true)
+    fetchRequest.sortDescriptors = [sortDescriptor]
+    fetchRequest.entity = entity
+    fetchedResultsController = NSFetchedResultsController.alloc.initWithFetchRequest(fetchRequest, managedObjectContext: context, sectionNameKeyPath: nil, cacheName: nil)
+    error = Pointer.new('@')
+    unless fetchedResultsController.performFetch(error)
+      puts error.localizedDescription
+      abort
+    end
+     puts 'got here'
+    fetchedObjects = fetchedResultsController.fetchedObjects
+    resultCount = fetchedObjects.count
+    scheduled = 0
+    now = NSDate.date
+
+    dateComponentsToday = NSCalendar.currentCalendar.components(NSYearCalendarUnit|NSMonthCalendarUnit|NSDayCalendarUnit, fromDate: now)
+    today = NSCalendar.currentCalendar.dateFromComponents(dateComponentsToday)
+
+    fetchedObjects.each do |birthday|
+      if today < birthday.nextBirthday
+        birthday.updateNextBirthdayAndAge
+      end
+
+
+
+    if scheduled< 20
+      fireDate = BRDSettings.sharedInstance.reminderDateForNextBirthday(birthday.nextBirthday)
+      if now.compare(fireDate)!= NSOrderedAscending
+      else
+        reminderNotification = UILocalNotification.alloc.init
+        reminderNotification.fireDate = fireDate
+        reminderNotification.timeZone = NSTimeZone.defaultTimeZone
+        reminderNotification.alertAction = 'View Birthdays'
+        reminderNotification.alertBody =BRDSettings.sharedInstance.reminderTextForNextBirthday(birthday)
+        reminderNotification.soundName = 'HappyBirthday.m4a'
+        reminderNotification.applicationIconBadgeNumber = 1
+        UIApplication.sharedApplication.scheduleLocalNotification(reminderNotification)
+        scheduled += 1
+      end
+    end
+  end
+    self.saveChanges
+     puts 'got here too!'
+   gcdq_main = Dispatch::Queue.main
+  gcdq_main.async do
+     puts 'got here too!'
+     NSNotificationCenter.defaultCenter.postNotificationName('BRNotificationCachedBirthdaysDidUpdate', object: self, userInfo: nil)
+  end
+
+    true
   end
 
 end

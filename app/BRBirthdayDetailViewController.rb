@@ -57,8 +57,15 @@ class BRBirthdayDetailViewController  < BRCoreViewController
     #name = @birthday['name']
     self.title = birthday.name
     image = UIImage.imageWithData(birthday.imageData)
-    @photo_view.image = UIImage.imageNamed "icon-birthday-cake.png"
-    @photo_view.image = image if image
+    if birthday.imageData == nil
+      if birthday.picURL && birthday.picURL.length > 0
+        @photo_view.setImageWithRemoteFileURL(birthday.picURL,placeHolderImage:(UIImage.imageNamed('icon-birthday-cake.png')))
+      else
+        @photo_view.image = UIImage.imageNamed('icon-birthday-cake.png')
+      end
+    else
+      @photo_view.image = UIImage.imageWithData(@birthday.imageData)
+    end
 
     days = birthday.remainingDaysUntilNextBirthday
 

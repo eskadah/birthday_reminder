@@ -8,24 +8,20 @@ attr_accessor :has_friends
     super
    @table_view = view.viewWithTag 1
 
-   puts @table_view.dataSource
-   puts @table_view.delegate
+
    @importView = view.viewWithTag 20
    @addressBookButton = view.viewWithTag 21
    @facebookButton = view.viewWithTag 22
    @addressBookButton.addTarget(self, action:'importFromAddressBookTapped:',forControlEvents:UIControlEventTouchUpInside)
    @facebookButton.addTarget(self, action:'importFromFacebookTapped:',forControlEvents:UIControlEventTouchUpInside)
    @importLabel = view.viewWithTag 23
-  #p @addressBookButton.titleLabel.text
-  #p @addressBookButton.actionsForTarget(self,forControlEvent:UIControlEventTouchUpInside)
-  #p @addressBookButton.enabled?
    @addressBook = toolbarItems[1]
    @addressBook.target = self
    @addressBook.action ='importFromAddressBookTapped:'
    @facebook = toolbarItems[3]
    @facebook.target = self
    @facebook.action ='importFromFacebookTapped:'
-   puts view.subviews
+
 
    BRStyleSheet.styleLabel(@importLabel,withType:'BRLabelTypeLarge')
 
@@ -43,9 +39,24 @@ attr_accessor :has_friends
 
  def viewWillAppear(animated)
    super
+   puts 'home view will appear'
    @table_view.reloadData
    self.has_friends = fetchedResultsController.fetchedObjects.count > 0
+   #BRDModel.sharedInstance.updateCachedBirthdays
+   NSNotificationCenter.defaultCenter.addObserver(self, selector: 'handleCachedBirthdaysDidUpdate:', name: 'BRNotificationCachedBirthdaysDidUpdate', object: nil)
+   NSNotificationCenter.defaultCenter.addObserver(self, selector: 'updateBirthdays', name: UIApplicationDidBecomeActiveNotification, object: nil)
  end
+
+def viewWillDisappear(animated)
+  super
+  NSNotificationCenter.defaultCenter.removeObserver(self, name: 'BRNotificationCachedBirthdaysDidUpdate', object: nil)
+  NSNotificationCenter.defaultCenter.removeObserver(self, name: UIApplicationDidBecomeActiveNotification, object: nil)
+end
+
+def handleCachedBirthdaysDidUpdate(notification)
+  puts ' handleCachedBirthdaysCalled'
+  @table_view.reloadData
+end
 
   def tableView(tableView, cellForRowAtIndexPath:indexPath)
      cell = @table_view.dequeueReusableCellWithIdentifier('Cell')
@@ -58,10 +69,28 @@ attr_accessor :has_friends
     #else
     #   brTableCell.iconView.image = UIImage.imageNamed('icon-birthday-cake.png')
     #end
+
+     if birthday.imageData == nil
+       if birthday.picURL && birthday.picURL.length > 0
+         brTableCell.iconView.setImageWithRemoteFileURL(birthday.picURL,placeHolderImage:UIImage.imageNamed('icon-birthday-cake.png'))
+
+       end
+
+         if birthday.picURL && birthday.picURL.length > 0 &&  UIImageView.imageCache.cachedImageForURL(birthday.picURL)
+         puts'called length > 0 and has picURL 2'
+
+         brTableCell.iconView.image = UIImageView.imageCache.cachedImageForURL(birthday.picURL)
+       else
+         brTableCell.iconView.image = UIImage.imageNamed('icon-birthday-cake.png')
+       end
+     else
+       brTableCell.iconView.image = UIImage.imageWithData(birthday.imageData)
+     end
+
      backgroundImage = indexPath.row == 0 ? UIImage.imageNamed('table-row-background.png') : UIImage.imageNamed('table-row-icing-background.png')
      brTableCell.backgroundView = UIImageView.alloc.initWithImage backgroundImage
 
-    return cell
+    return brTableCell
   end
 
   def tableView(tableView, numberOfRowsInSection:section)
@@ -134,6 +163,11 @@ attr_accessor :has_friends
 
   def controllerDidChangeContent(controller)
 
+  end
+
+  def updateBirthdays
+    puts 'updateBdaysCalled on active notification'
+    BRDModel.sharedInstance.updateCachedBirthdays
   end
 
 end

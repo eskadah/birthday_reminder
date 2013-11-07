@@ -3,7 +3,7 @@ class BirthdayTableViewCell   < UITableViewCell
   attr_accessor :birthdayImport
 
   def iconView
-    @icon_view = contentView.viewWithTag 1
+    @icon_view ||= contentView.viewWithTag 1
     BRStyleSheet.styleRoundCorneredView(@icon_view)
     @icon_view
   end
@@ -63,8 +63,8 @@ class BirthdayTableViewCell   < UITableViewCell
   def birthday=(birthday)
 
     @birthday = birthday
-    nameLabel.text = @birthday.name
-    days = @birthday.remainingDaysUntilNextBirthday
+    nameLabel.text = birthday.name
+    days = birthday.remainingDaysUntilNextBirthday
 
     if days == 0
       remainingDaysLabel.text = remainingDaysSubTextLabel.text = ''
@@ -75,23 +75,25 @@ class BirthdayTableViewCell   < UITableViewCell
       remainingDaysImageView.image = UIImage.imageNamed 'icon-days-remaining.png'
     end
 
-    birthdayLabel.text = @birthday.birthdayTextToDisplay
+    birthdayLabel.text = birthday.birthdayTextToDisplay
 
-    if @birthday.imageData == nil
-      if @birthday.picURL && @birthday.picURL.length > 0
-        self.iconView.setImageWithRemoteFileURL(@birthday.picURL,placeHolderImage:(UIImage.imageNamed('icon-birthday-cake.png')))
+    if birthday.imageData == nil
+      if birthday.picURL && birthday.picURL.length > 0
+        puts'called length > 0 and has picURL'
+       iconView.setImageWithRemoteFileURL(birthday.picURL,placeHolderImage:UIImage.imageNamed('icon-birthday-cake.png'))
       else
-        self.iconView.image = UIImage.imageNamed('icon-birthday-cake.png')
+        iconView.image = UIImage.imageNamed('icon-birthday-cake.png')
       end
     else
-      self.iconView.image = UIImage.imageWithData(@birthday.imageData)
+      iconView.image = UIImage.imageWithData(@birthday.imageData)
     end
   end
 
   def birthdayImport=(birthdayImport)
+    puts "this is birthdayImportData: #{birthdayImport.imageData}"
     @birthdayImport = birthdayImport
-    nameLabel.text = @birthdayImport.name
-    days = @birthdayImport.remainingDaysUntilNextBirthday
+    nameLabel.text = birthdayImport.name
+    days = birthdayImport.remainingDaysUntilNextBirthday
 
     if days == 0
       remainingDaysLabel.text = remainingDaysSubTextLabel.text = ''
@@ -102,19 +104,17 @@ class BirthdayTableViewCell   < UITableViewCell
       remainingDaysImageView.image = UIImage.imageNamed 'icon-days-remaining.png'
     end
 
-    birthdayLabel.text = @birthdayImport.birthdayTextToDisplay
-    if @birthdayImport.imageData == nil
-      if @birthdayImport.picURL && @birthdayImport.picURL.length > 0
+    birthdayLabel.text = birthdayImport.birthdayTextToDisplay
+    if birthdayImport.imageData == nil
+      if birthdayImport.picURL && birthdayImport.picURL.length > 0
         puts ' birthda import picurl has length'
-        puts  @birthdayImport.picURL
-        puts  birthdayImport.picURL
-        iconView.setImageWithRemoteFileURL(@birthdayImport.picURL,placeHolderImage:UIImage.imageNamed('icon-birthday-cake.png'))
+        iconView.setImageWithRemoteFileURL(birthdayImport.picURL,placeHolderImage:UIImage.imageNamed('icon-birthday-cake.png'))
       else
         puts ' birthda import picurl has no length'
         self.iconView.image = UIImage.imageNamed('icon-birthday-cake.png')
       end
     else
-      self.iconView.image = UIImage.imageWithData(@birthdayImport.imageData)
+      self.iconView.image = UIImage.imageWithData(birthdayImport.imageData)
     end
   end
 

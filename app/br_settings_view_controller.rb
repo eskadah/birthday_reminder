@@ -26,6 +26,7 @@ class BRSettingsViewController  < UITableViewController
   end
 
   def didClickDoneButton(sender)
+    BRDModel.sharedInstance.updateCachedBirthdays
     self.dismissViewControllerAnimated(true, completion: nil)
   end
 

@@ -34,7 +34,9 @@ class UIImageView
 
   class DownloadHelper
     attr_accessor :url,:data,:connection,:delegate,:image
-
+     def konnection
+       @connection
+     end
     def connection
       @connection
     end
@@ -125,7 +127,7 @@ module RemoteFileHidden
     self.downloadHelper.url = urlString
     self.downloadHelper.connection = NSURLConnection.alloc.initWithRequest(request, delegate: self.downloadHelper, startImmediately: true)
     #puts downloadHelper.connection
-    self.downloadHelper.data = NSMutableData.data if self.downloadHelper.connection
+    self.downloadHelper.data = NSMutableData.data if @downloadHelper.connection
 
 
 

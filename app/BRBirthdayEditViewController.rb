@@ -20,8 +20,15 @@ SIDE = 71.0
     end
     @birthday.updateNextBirthdayAndAge
     @date_picker.date = NSCalendar.currentCalendar.dateFromComponents components
-    @photo_view.image = UIImage.imageNamed "icon-birthday-cake.png"
-    @photo_view.image = UIImage.imageWithData(@birthday.imageData) if @birthday.imageData
+    if birthday.imageData == nil
+      if birthday.picURL && birthday.picURL.length > 0
+        @photo_view.setImageWithRemoteFileURL(birthday.picURL,placeHolderImage:(UIImage.imageNamed('icon-birthday-cake.png')))
+      else
+        @photo_view.image = UIImage.imageNamed('icon-birthday-cake.png')
+      end
+    else
+      @photo_view.image = UIImage.imageWithData(@birthday.imageData)
+    end
     updateSaveButton
   end
 
@@ -155,6 +162,7 @@ SIDE = 71.0
 
   def saveAndDismiss
    BRDModel.sharedInstance.saveChanges
+   BRDModel.sharedInstance.updateCachedBirthdays
    super
   end
 
