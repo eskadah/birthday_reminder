@@ -3,7 +3,7 @@ birthday_reminder
 
 Birthday Reminder App from Foundation Iphone App development written with Rubymotion
 
-This is a port of the Birthday Reminder App written by Nick Kuh in the book; "Foundation Iphone App Development" published by Apress
+This is a complete rewrite of the Birthday Reminder App written by Nick Kuh in the book; "Foundation Iphone App Development" published by Apress
 
 The port works as described and some modifications have been made to ensure compliance with the latest Facebook SDK
 
